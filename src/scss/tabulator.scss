@@ -440,8 +440,8 @@ $footerActiveColor:#d00 !default; //footer bottom active text color
 				border-bottom:none;
 			}
 		}
-
-		.tabulator-paginator{
+        // ! we dont use this pagination style
+		/*.tabulator-paginator{
 			color: $footerTextColor;
 			font-family:inherit;
 			font-weight:inherit;
@@ -490,7 +490,7 @@ $footerActiveColor:#d00 !default; //footer bottom active text color
 					color:#fff;
 				}
 			}
-		}
+		}*/
 	}
 
 	//column resize handles

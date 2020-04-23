@@ -459,7 +459,8 @@ $footerBorderColor:$grey-lighter !default; //footer border color
 			}
 		}
 
-		.tabulator-paginator{
+        // ! we dont use bulma pagination
+		/*.tabulator-paginator{
 			color: $footerTextColor;
 			font-family:inherit;
 			font-weight:inherit;
@@ -514,7 +515,7 @@ $footerBorderColor:$grey-lighter !default; //footer border color
 					// color:#fff;
 				}
 			}
-		}
+		}*/
 	}
 
 	//column resize handles

@@ -7280,9 +7280,10 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 	FooterManager.prototype.createElement = function () {
 
-		var el = document.createElement("div");
+		var el = document.createElement('div');
 
-		el.classList.add("tabulator-footer");
+		el.classList.add('tabulator-footer', 'pagination-footer'); // ! custom style
+
 
 		return el;
 	};
@@ -7293,9 +7294,9 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 			switch (_typeof(this.table.options.footerElement)) {
 
-				case "string":
+				case 'string':
 
-					if (this.table.options.footerElement[0] === "<") {
+					if (this.table.options.footerElement[0] === '<') {
 
 						this.element.innerHTML = this.table.options.footerElement;
 					} else {
@@ -20924,10 +20925,9 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 	Tabulator.prototype.registerModule("mutator", Mutator);
 	var Page = function Page(table) {
-
 		this.table = table; //hold Tabulator object
 
-		this.mode = "local";
+		this.mode = 'local';
 		this.progressiveLoad = false;
 
 		this.size = 0;
@@ -20948,37 +20948,38 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 	};
 
 	Page.prototype.createElements = function () {
-
 		var button;
 
-		this.element = document.createElement("span");
-		this.element.classList.add("tabulator-paginator");
+		this.element = document.createElement('span');
+		this.element.classList.add('tabulator-paginator', 'encore-list__pagination', 'pagination'); // ! custom style
 
-		this.pagesElement = document.createElement("span");
-		this.pagesElement.classList.add("tabulator-pages");
+		this.pagesElement = document.createElement('span');
+		this.pagesElement.classList.add('tabulator-pages', 'pagination'); // ! custom style
 
-		button = document.createElement("button");
-		button.classList.add("tabulator-page");
-		button.setAttribute("type", "button");
-		button.setAttribute("role", "button");
-		button.setAttribute("aria-label", "");
-		button.setAttribute("title", "");
+		button = document.createElement('button');
+		button.classList.add('tabulator-page');
+		button.setAttribute('type', 'button');
+		button.setAttribute('role', 'button');
+		button.setAttribute('aria-label', '');
+		button.setAttribute('title', '');
 
 		this.firstBut = button.cloneNode(true);
-		this.firstBut.setAttribute("data-page", "first");
+		this.firstBut.setAttribute('data-page', 'first');
 
 		this.prevBut = button.cloneNode(true);
-		this.prevBut.setAttribute("data-page", "prev");
+		this.prevBut.setAttribute('data-page', 'prev');
+		this.prevBut.classList.add('button', 'previous'); // ! custom style
 
 		this.nextBut = button.cloneNode(true);
-		this.nextBut.setAttribute("data-page", "next");
+		this.nextBut.setAttribute('data-page', 'next');
+		this.nextBut.classList.add('button', 'next'); // ! custom style
 
 		this.lastBut = button.cloneNode(true);
-		this.lastBut.setAttribute("data-page", "last");
+		this.lastBut.setAttribute('data-page', 'last');
 
 		if (this.table.options.paginationSizeSelector) {
-			this.pageSizeSelect = document.createElement("select");
-			this.pageSizeSelect.classList.add("tabulator-page-size");
+			this.pageSizeSelect = document.createElement('select');
+			this.pageSizeSelect.classList.add('tabulator-page-size');
 		}
 	};
 
@@ -20988,7 +20989,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 		var pageSizes = [];
 
 		if (this.pageSizeSelect) {
-
 			if (Array.isArray(this.table.options.paginationSizeSelector)) {
 				pageSizes = this.table.options.paginationSizeSelector;
 				this.pageSizes = pageSizes;
@@ -20997,7 +20997,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 					pageSizes.unshift(this.size);
 				}
 			} else {
-
 				if (this.pageSizes.indexOf(this.size) == -1) {
 					pageSizes = [];
 
@@ -21014,7 +21013,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 			while (this.pageSizeSelect.firstChild) {
 				this.pageSizeSelect.removeChild(this.pageSizeSelect.firstChild);
 			}pageSizes.forEach(function (item) {
-				var itemEl = document.createElement("option");
+				var itemEl = document.createElement('option');
 				itemEl.value = item;
 				itemEl.innerHTML = item;
 
@@ -21042,56 +21041,56 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 		//build pagination element
 
 		//bind localizations
-		self.table.modules.localize.bind("pagination|first", function (value) {
+		self.table.modules.localize.bind('pagination|first', function (value) {
 			self.firstBut.innerHTML = value;
 		});
 
-		self.table.modules.localize.bind("pagination|first_title", function (value) {
-			self.firstBut.setAttribute("aria-label", value);
-			self.firstBut.setAttribute("title", value);
+		self.table.modules.localize.bind('pagination|first_title', function (value) {
+			self.firstBut.setAttribute('aria-label', value);
+			self.firstBut.setAttribute('title', value);
 		});
 
-		self.table.modules.localize.bind("pagination|prev", function (value) {
-			self.prevBut.innerHTML = value;
+		self.table.modules.localize.bind('pagination|prev', function (value) {
+			self.prevBut.innerHTML = '<span class="icon"><i class="fas fa-angle-double-left"></i></span>'; // ! custom style
 		});
 
-		self.table.modules.localize.bind("pagination|prev_title", function (value) {
-			self.prevBut.setAttribute("aria-label", value);
-			self.prevBut.setAttribute("title", value);
+		self.table.modules.localize.bind('pagination|prev_title', function (value) {
+			self.prevBut.setAttribute('aria-label', value);
+			self.prevBut.setAttribute('title', value);
 		});
 
-		self.table.modules.localize.bind("pagination|next", function (value) {
-			self.nextBut.innerHTML = value;
+		self.table.modules.localize.bind('pagination|next', function (value) {
+			self.nextBut.innerHTML = '<span class="icon"><i class="fas fa-angle-double-right"></i></span>'; // ! custom style
 		});
 
-		self.table.modules.localize.bind("pagination|next_title", function (value) {
-			self.nextBut.setAttribute("aria-label", value);
-			self.nextBut.setAttribute("title", value);
+		self.table.modules.localize.bind('pagination|next_title', function (value) {
+			self.nextBut.setAttribute('aria-label', value);
+			self.nextBut.setAttribute('title', value);
 		});
 
-		self.table.modules.localize.bind("pagination|last", function (value) {
+		self.table.modules.localize.bind('pagination|last', function (value) {
 			self.lastBut.innerHTML = value;
 		});
 
-		self.table.modules.localize.bind("pagination|last_title", function (value) {
-			self.lastBut.setAttribute("aria-label", value);
-			self.lastBut.setAttribute("title", value);
+		self.table.modules.localize.bind('pagination|last_title', function (value) {
+			self.lastBut.setAttribute('aria-label', value);
+			self.lastBut.setAttribute('title', value);
 		});
 
 		//click bindings
-		self.firstBut.addEventListener("click", function () {
+		self.firstBut.addEventListener('click', function () {
 			self.setPage(1);
 		});
 
-		self.prevBut.addEventListener("click", function () {
+		self.prevBut.addEventListener('click', function () {
 			self.previousPage();
 		});
 
-		self.nextBut.addEventListener("click", function () {
+		self.nextBut.addEventListener('click', function () {
 			self.nextPage().then(function () {}).catch(function () {});
 		});
 
-		self.lastBut.addEventListener("click", function () {
+		self.lastBut.addEventListener('click', function () {
 			self.setPage(self.max);
 		});
 
@@ -21100,29 +21099,29 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 		}
 
 		if (this.pageSizeSelect) {
-			pageSelectLabel = document.createElement("label");
+			pageSelectLabel = document.createElement('label');
 
-			self.table.modules.localize.bind("pagination|page_size", function (value) {
-				self.pageSizeSelect.setAttribute("aria-label", value);
-				self.pageSizeSelect.setAttribute("title", value);
+			self.table.modules.localize.bind('pagination|page_size', function (value) {
+				self.pageSizeSelect.setAttribute('aria-label', value);
+				self.pageSizeSelect.setAttribute('title', value);
 				pageSelectLabel.innerHTML = value;
 			});
 
 			self.element.appendChild(pageSelectLabel);
 			self.element.appendChild(self.pageSizeSelect);
 
-			self.pageSizeSelect.addEventListener("change", function (e) {
+			self.pageSizeSelect.addEventListener('change', function (e) {
 				self.setPageSize(self.pageSizeSelect.value);
 				self.setPage(1).then(function () {}).catch(function () {});
 			});
 		}
 
 		//append to DOM
-		self.element.appendChild(self.firstBut);
+		//self.element.appendChild(self.firstBut);
 		self.element.appendChild(self.prevBut);
 		self.element.appendChild(self.pagesElement);
 		self.element.appendChild(self.nextBut);
-		self.element.appendChild(self.lastBut);
+		//self.element.appendChild(self.lastBut);
 
 		if (!self.table.options.paginationElement && !hidden) {
 			self.table.footerManager.append(self.element, self);
@@ -21134,13 +21133,13 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 		if (self.table.options.paginationSize) {
 			self.size = self.table.options.paginationSize;
 		} else {
-			testElRow = document.createElement("div");
-			testElRow.classList.add("tabulator-row");
+			testElRow = document.createElement('div');
+			testElRow.classList.add('tabulator-row');
 			testElRow.style.visibility = hidden;
 
-			testElCell = document.createElement("div");
-			testElCell.classList.add("tabulator-cell");
-			testElCell.innerHTML = "Page Row Test";
+			testElCell = document.createElement('div');
+			testElCell.classList.add('tabulator-cell');
+			testElCell.innerHTML = 'Page Row Test';
 
 			testElRow.appendChild(testElCell);
 
@@ -21159,7 +21158,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 	Page.prototype.initializeProgressive = function (mode) {
 		this.initialize(true);
-		this.mode = "progressive_" + mode;
+		this.mode = 'progressive_' + mode;
 		this.progressiveLoad = true;
 	};
 
@@ -21186,7 +21185,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 	//reset to first page without triggering action
 	Page.prototype.reset = function (force, columnsChanged) {
-		if (this.mode == "local" || force) {
+		if (this.mode == 'local' || force) {
 			this.page = 1;
 		}
 
@@ -21199,7 +21198,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 	//set the maxmum page
 	Page.prototype.setMaxPage = function (max) {
-
 		max = parseInt(max);
 
 		this.max = max || 1;
@@ -21217,7 +21215,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 		var self = this;
 
 		return new Promise(function (resolve, reject) {
-
 			page = parseInt(page);
 
 			if (page > 0 && page <= _this63.max) {
@@ -21228,11 +21225,11 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 					reject();
 				});
 
-				if (self.table.options.persistence && self.table.modExists("persistence", true) && self.table.modules.persistence.config.page) {
-					self.table.modules.persistence.save("page");
+				if (self.table.options.persistence && self.table.modExists('persistence', true) && self.table.modules.persistence.config.page) {
+					self.table.modules.persistence.save('page');
 				}
 			} else {
-				console.warn("Pagination Error - Requested page is out of range of 1 - " + _this63.max + ":", page);
+				console.warn('Pagination Error - Requested page is out of range of 1 - ' + _this63.max + ':', page);
 				reject();
 			}
 		});
@@ -21242,7 +21239,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 		var _this64 = this;
 
 		return new Promise(function (resolve, reject) {
-
 			var rows = _this64.table.rowManager.getDisplayRows(_this64.displayIndex - 1);
 			var index = rows.indexOf(row);
 
@@ -21255,7 +21251,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 					reject();
 				});
 			} else {
-				console.warn("Pagination Error - Requested row is not visible");
+				console.warn('Pagination Error - Requested row is not visible');
 				reject();
 			}
 		});
@@ -21273,8 +21269,8 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 			this.generatePageSizeSelectList();
 		}
 
-		if (this.table.options.persistence && this.table.modExists("persistence", true) && this.table.modules.persistence.config.page) {
-			this.table.modules.persistence.save("page");
+		if (this.table.options.persistence && this.table.modExists('persistence', true) && this.table.modules.persistence.config.page) {
+			this.table.modules.persistence.save('page');
 		}
 	};
 
@@ -21316,21 +21312,21 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 	Page.prototype._generatePageButton = function (page) {
 		var self = this,
-		    button = document.createElement("button");
+		    button = document.createElement('button');
 
-		button.classList.add("tabulator-page");
+		button.classList.add('pagination-link');
 		if (page == self.page) {
-			button.classList.add("active");
+			button.classList.add('is-current');
 		}
 
-		button.setAttribute("type", "button");
-		button.setAttribute("role", "button");
-		button.setAttribute("aria-label", "Show Page " + page);
-		button.setAttribute("title", "Show Page " + page);
-		button.setAttribute("data-page", page);
+		button.setAttribute('type', 'button');
+		button.setAttribute('role', 'button');
+		button.setAttribute('aria-label', 'Show Page ' + page);
+		button.setAttribute('title', 'Show Page ' + page);
+		button.setAttribute('data-page', page);
 		button.textContent = page;
 
-		button.addEventListener("click", function (e) {
+		button.addEventListener('click', function (e) {
 			self.setPage(page);
 		});
 
@@ -21350,11 +21346,11 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 					reject();
 				});
 
-				if (_this65.table.options.persistence && _this65.table.modExists("persistence", true) && _this65.table.modules.persistence.config.page) {
-					_this65.table.modules.persistence.save("page");
+				if (_this65.table.options.persistence && _this65.table.modExists('persistence', true) && _this65.table.modules.persistence.config.page) {
+					_this65.table.modules.persistence.save('page');
 				}
 			} else {
-				console.warn("Pagination Error - Previous page would be less than page 1:", 0);
+				console.warn('Pagination Error - Previous page would be less than page 1:', 0);
 				reject();
 			}
 		});
@@ -21373,12 +21369,12 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 					reject();
 				});
 
-				if (_this66.table.options.persistence && _this66.table.modExists("persistence", true) && _this66.table.modules.persistence.config.page) {
-					_this66.table.modules.persistence.save("page");
+				if (_this66.table.options.persistence && _this66.table.modExists('persistence', true) && _this66.table.modules.persistence.config.page) {
+					_this66.table.modules.persistence.save('page');
 				}
 			} else {
 				if (!_this66.progressiveLoad) {
-					console.warn("Pagination Error - Next page would be greater than maximum page of " + _this66.max + ":", _this66.max + 1);
+					console.warn('Pagination Error - Next page would be greater than maximum page of ' + _this66.max + ':', _this66.max + 1);
 				}
 				reject();
 			}
@@ -21407,7 +21403,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 	Page.prototype.getRows = function (data) {
 		var output, start, end;
 
-		if (this.mode == "local") {
+		if (this.mode == 'local') {
 			output = [];
 			start = this.size * (this.page - 1);
 			end = start + parseInt(this.size);
@@ -21422,7 +21418,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 			return output;
 		} else {
-
 			this._setPageButtons();
 
 			return data.slice(0);
@@ -21435,21 +21430,20 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 		var left;
 
 		return new Promise(function (resolve, reject) {
-
 			switch (_this67.mode) {
-				case "local":
+				case 'local':
 					left = _this67.table.rowManager.scrollLeft;
 
-					_this67.table.rowManager.refreshActiveData("page");
+					_this67.table.rowManager.refreshActiveData('page');
 					_this67.table.rowManager.scrollHorizontal(left);
 
 					_this67.table.options.pageLoaded.call(_this67.table, _this67.getPage());
 					resolve();
 					break;
 
-				case "remote":
-				case "progressive_load":
-				case "progressive_scroll":
+				case 'remote':
+				case 'progressive_load':
+				case 'progressive_scroll':
 					_this67.table.modules.ajax.blockActiveRequest();
 					_this67._getRemotePage().then(function () {
 						resolve();
@@ -21459,7 +21453,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 					break;
 
 				default:
-					console.warn("Pagination Error - no such pagination mode:", _this67.mode);
+					console.warn('Pagination Error - no such pagination mode:', _this67.mode);
 					reject();
 			}
 		});
@@ -21473,8 +21467,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 		    pageParams;
 
 		return new Promise(function (resolve, reject) {
-
-			if (!self.table.modExists("ajax", true)) {
+			if (!self.table.modExists('ajax', true)) {
 				reject();
 			}
 
@@ -21491,7 +21484,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 			}
 
 			//set sort data if defined
-			if (_this68.table.options.ajaxSorting && _this68.table.modExists("sort")) {
+			if (_this68.table.options.ajaxSorting && _this68.table.modExists('sort')) {
 				var sorters = self.table.modules.sort.getSort();
 
 				sorters.forEach(function (item) {
@@ -21502,7 +21495,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 			}
 
 			//set filter data if defined
-			if (_this68.table.options.ajaxFiltering && _this68.table.modExists("filter")) {
+			if (_this68.table.options.ajaxFiltering && _this68.table.modExists('filter')) {
 				var filters = self.table.modules.filter.getFilters(true, true);
 				pageParams[_this68.dataSentNames.filters] = filters;
 			}
@@ -21526,7 +21519,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 		    data,
 		    margin;
 
-		if (typeof data[this.dataReceivedNames.last_page] === "undefined") {
+		if (typeof data[this.dataReceivedNames.last_page] === 'undefined') {
 			console.warn("Remote Pagination Error - Server response missing '" + this.dataReceivedNames.last_page + "' property");
 		}
 
@@ -21535,8 +21528,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 			if (this.progressiveLoad) {
 				switch (this.mode) {
-					case "progressive_load":
-
+					case 'progressive_load':
 						if (this.page == 1) {
 							this.table.rowManager.setData(data[this.dataReceivedNames.data], false, this.initialLoad && this.page == 1);
 						} else {
@@ -21550,7 +21542,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 						}
 						break;
 
-					case "progressive_scroll":
+					case 'progressive_scroll':
 						data = this.table.rowManager.getData().concat(data[this.dataReceivedNames.data]);
 
 						this.table.rowManager.setData(data, true, this.initialLoad && this.page == 1);
@@ -21597,23 +21589,23 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 	//set the paramter names for pagination requests
 	Page.prototype.paginationDataSentNames = {
-		"page": "page",
-		"size": "size",
-		"sorters": "sorters",
+		page: 'page',
+		size: 'size',
+		sorters: 'sorters',
 		// "sort_dir":"sort_dir",
-		"filters": "filters"
+		filters: 'filters'
 		// "filter_value":"filter_value",
 		// "filter_type":"filter_type",
 	};
 
 	//set the property names for pagination responses
 	Page.prototype.paginationDataReceivedNames = {
-		"current_page": "current_page",
-		"last_page": "last_page",
-		"data": "data"
+		current_page: 'current_page',
+		last_page: 'last_page',
+		data: 'data'
 	};
 
-	Tabulator.prototype.registerModule("page", Page);
+	Tabulator.prototype.registerModule('page', Page);
 
 	var Persistence = function Persistence(table) {
 		this.table = table; //hold Tabulator object

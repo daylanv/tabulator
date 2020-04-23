@@ -5703,20 +5703,18 @@ var FooterManager = function FooterManager(table) {
 };
 
 FooterManager.prototype.createElement = function () {
-	var el = document.createElement("div");
+	var el = document.createElement('div');
 
-	el.classList.add("tabulator-footer");
+	el.classList.add('tabulator-footer', 'pagination-footer'); // ! custom style
 
 	return el;
 };
 
 FooterManager.prototype._initialize = function (element) {
 	if (this.table.options.footerElement) {
-
 		switch (_typeof(this.table.options.footerElement)) {
-			case "string":
-
-				if (this.table.options.footerElement[0] === "<") {
+			case 'string':
+				if (this.table.options.footerElement[0] === '<') {
 					this.element.innerHTML = this.table.options.footerElement;
 				} else {
 					this.external = true;
