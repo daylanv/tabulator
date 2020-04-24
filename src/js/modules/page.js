@@ -200,7 +200,16 @@ Page.prototype.initialize = function(hidden) {
     //self.element.appendChild(self.lastBut);
 
     if (!self.table.options.paginationElement && !hidden) {
+        // ! custom styles
+        const leftContent = document.createElement('div');
+        leftContent.classList.add('pagination-footer__left');
+        self.table.footerManager.append(leftContent, self);
         self.table.footerManager.append(self.element, self);
+        const rightContent = document.createElement('div');
+        rightContent.classList.add('pagination-footer__right');
+        self.table.footerManager.append(rightContent, self);
+
+        self.table.footerManager.append(self.table.options.customFooterContent, self);
     }
 
     //set default values
