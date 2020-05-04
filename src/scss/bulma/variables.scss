@@ -185,7 +185,7 @@ $table-head-cell-color: $text-strong !default;
 $table-foot-cell-border-width: 2px 0 0 !default;
 $table-foot-cell-color: $text-strong !default;
 
-$table-head-background-color: transparent !default;
+$table-head-background-color: $white !default; // ! custom
 $table-body-background-color: transparent !default;
 $table-foot-background-color: transparent !default;
 
