@@ -13470,7 +13470,10 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 			if (title) {
 				autoTableParams.addPageContent = function (data) {
-					doc.text(title, 40, 30);
+					doc.centeredText(title, 40);
+					if (options.subTitle) {
+						doc.centeredText(options.subTitle, 60);
+					}
 				};
 			}
 
