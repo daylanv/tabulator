@@ -167,7 +167,7 @@ RowManager.prototype.findRow = function(subject){
 		}else if(typeof HTMLElement !== "undefined" && subject instanceof HTMLElement){
 			//subject is a HTML element of the row
 			let match = self.rows.find(function(row){
-				return row.element === subject;
+				return row.getElement() === subject;
 			});
 
 			return match || false;
@@ -310,7 +310,9 @@ RowManager.prototype.setData = function(data, renderInPosition, columnsChanged){
 				this.table.columnManager.generateColumnsFromRowData(data);
 			}
 			this.resetScroll();
+
 			this._setDataActual(data);
+
 		}
 
 		resolve();
@@ -347,9 +349,9 @@ RowManager.prototype._setDataActual = function(data, renderInPosition){
 			}
 		});
 
-		self.table.options.dataLoaded.call(this.table, data);
-
 		self.refreshActiveData(false, false, renderInPosition);
+
+		self.table.options.dataLoaded.call(this.table, data);
 
 	}else{
 		console.error("Data Loading Error - Unable to process data due to invalid data type \nExpecting: array \nReceived: ", typeof data, "\nData:     ", data);
@@ -366,6 +368,12 @@ RowManager.prototype._wipeElements = function(){
 	}
 
 	this.rows = [];
+	this.activeRows = [];
+	this.activeRowsCount = 0;
+	this.displayRows = [];
+	this.displayRowsCount = 0;
+
+	this.adjustTableSize();
 };
 
 RowManager.prototype.deleteRow = function(row, blockRedraw){
@@ -398,7 +406,9 @@ RowManager.prototype.deleteRow = function(row, blockRedraw){
 
 	this.table.options.rowDeleted.call(this.table, row.getComponent());
 
-	this.table.options.dataEdited.call(this.table, this.getData());
+	if(this.table.options.dataChanged){
+		this.table.options.dataChanged.call(this.table, this.getData());
+	}
 
 	if(this.table.options.groupBy && this.table.modExists("groupRows")){
 		this.table.modules.groupRows.updateGroupRows(true);
@@ -582,7 +592,9 @@ RowManager.prototype.addRowActual = function(data, pos, index, blockRedraw){
 
 	this.table.options.rowAdded.call(this.table, row.getComponent());
 
-	this.table.options.dataEdited.call(this.table, this.getData());
+	if(this.table.options.dataChanged){
+		this.table.options.dataChanged.call(this.table, this.getData());
+	}
 
 	if(!blockRedraw){
 		this.reRenderInPosition();
@@ -605,15 +617,19 @@ RowManager.prototype.moveRow = function(from, to, after){
 
 
 RowManager.prototype.moveRowActual = function(from, to, after){
-	var self = this;
 	this._moveRowInArray(this.rows, from, to, after);
 	this._moveRowInArray(this.activeRows, from, to, after);
 
-	this.displayRowIterator(function(rows){
-		self._moveRowInArray(rows, from, to, after);
+	this.displayRowIterator((rows) => {
+		this._moveRowInArray(rows, from, to, after);
 	});
 
 	if(this.table.options.groupBy && this.table.modExists("groupRows")){
+
+		if(!after && to instanceof Group){
+			to = this.table.rowManager.prevDisplayRow(from) || to;
+		}
+
 		var toGroup = to.getGroup();
 		var fromGroup = from.getGroup();
 
@@ -709,7 +725,7 @@ RowManager.prototype.prevDisplayRow = function(row, rowOnly){
 		prevRow = this.getDisplayRows()[index-1];
 	}
 
-	if(prevRow && (!(prevRow instanceof Row) || prevRow.type != "row")){
+	if(rowOnly && prevRow && (!(prevRow instanceof Row) || prevRow.type != "row")){
 		return this.prevDisplayRow(prevRow, rowOnly);
 	}
 
@@ -1022,7 +1038,13 @@ RowManager.prototype.refreshActiveData = function(stage, skipStage, renderInPosi
 			if(renderInPosition){
 				self.reRenderInPosition();
 			}else{
+
+				if(stage === "all" && this.table.options.virtualDomHoz){
+					this.table.vdomHoz.dataChange();
+				}
+
 				self.renderTable();
+
 				if(table.options.layoutColumnsOnNewData){
 					self.table.columnManager.redraw(true);
 				}
@@ -1174,6 +1196,10 @@ RowManager.prototype.getRows = function(active){
 
 		case "visible":
 		rows = this.getVisibleRows(true);
+		break;
+
+		case "selected":
+		rows = this.table.modules.selectRow.selectedRows;
 		break;
 
 		default:
@@ -1338,8 +1364,8 @@ RowManager.prototype.renderEmptyScroll = function(){
 		this.tableElement.style.display = "none";
 	}else{
 		this.tableElement.style.minWidth = this.table.columnManager.getWidth() + "px";
-		this.tableElement.style.minHeight = "1px";
-		this.tableElement.style.visibility = "hidden";
+		// this.tableElement.style.minHeight = "1px";
+		// this.tableElement.style.visibility = "hidden";
 	}
 };
 
@@ -1431,13 +1457,20 @@ RowManager.prototype._virtualRenderFill = function(position, forceMove, offset){
 			self.styleRow(row, index);
 
 			element.appendChild(row.getElement());
-			if(!row.initialized){
-				row.initialize(true);
-			}else{
-				if(!row.heightInitialized){
-					row.normalizeHeight(true);
-				}
+
+			row.initialize();
+
+			if(!row.heightInitialized){
+				row.normalizeHeight(true);
 			}
+
+			// if(!row.initialized){
+			// 	row.initialize(true);
+			// }else{
+			// 	if(!row.heightInitialized){
+			// 		row.normalizeHeight(true);
+			// 	}
+			// }
 
 			rowHeight = row.getHeight();
 
@@ -1736,7 +1769,8 @@ RowManager.prototype.adjustTableSize = function(){
 	modExists;
 
 	if(this.renderMode === "virtual"){
-		let otherHeight = this.columnManager.getElement().offsetHeight + (this.table.footerManager && !this.table.footerManager.external ? this.table.footerManager.getElement().offsetHeight : 0);
+
+		let otherHeight =  Math.floor(this.columnManager.getElement().getBoundingClientRect().height + (this.table.footerManager && this.table.footerManager.active && !this.table.footerManager.external ? this.table.footerManager.getElement().getBoundingClientRect().height : 0));
 
 		if(this.fixedHeight){
 			this.element.style.minHeight = "calc(100% - " + otherHeight + "px)";
@@ -1766,7 +1800,7 @@ RowManager.prototype.adjustTableSize = function(){
 //renitialize all rows
 RowManager.prototype.reinitialize = function(){
 	this.rows.forEach(function(row){
-		row.reinitialize();
+		row.reinitialize(true);
 	});
 };
 

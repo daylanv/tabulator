@@ -2,14 +2,10 @@ var gulp = require('gulp'),
 sass = require('gulp-sass'),
 autoprefixer = require('gulp-autoprefixer'),
 cssnano = require('gulp-cssnano'),
-jshint = require('gulp-jshint'),
 uglify = require('gulp-uglify'),
-imagemin = require('gulp-imagemin'),
+uglifyesm = require('gulp-uglify-es').default,
 rename = require('gulp-rename'),
 concat = require('gulp-concat'),
-notify = require('gulp-notify'),
-cache = require('gulp-cache'),
-livereload = require('gulp-livereload'),
 del = require('del');
 include = require('gulp-include'),
 sourcemaps = require('gulp-sourcemaps'),
@@ -19,7 +15,7 @@ gutil = require('gulp-util'),
 insert = require('gulp-insert'),
 fs = require('fs');
 
-var version_no = "4.6.2",
+var version_no = "4.9.3",
 
 version = "/* Tabulator v" + version_no + " (c) Oliver Folkerd */\n";
 
@@ -36,7 +32,7 @@ gulp.src = function() {
 };
 
 //build css
-gulp.task('styles', function() {
+function styles(){
     return gulp.src('src/scss/**/tabulator*.scss')
     .pipe(sourcemaps.init())
     .pipe(insert.prepend(version + "\n"))
@@ -49,11 +45,10 @@ gulp.task('styles', function() {
     .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest('dist/css'))
     .on('end', function(){ gutil.log('Styles task complete'); })
-    });
-
+}
 
 //build tabulator
-gulp.task('tabulator', function() {
+function tabulator(){
     //return gulp.src('src/js/**/*.js')
     return gulp.src('src/js/core_modules.js')
     .pipe(insert.prepend(version + "\n"))
@@ -82,11 +77,42 @@ gulp.task('tabulator', function() {
     //.pipe(notify({ message: 'Scripts task complete' }));
     .on('end', function(){ gutil.log('Tabulator Complete'); })
     //.on("error", console.log)
-    });
+}
+
+//build tabulator
+function esm(){
+    //return gulp.src('src/js/**/*.js')
+    return gulp.src('src/js/core_esm.js')
+    .pipe(insert.prepend(version + "\n"))
+    //.pipe(sourcemaps.init())
+    .pipe(include())
+    //.pipe(jshint())
+    // .pipe(jshint.reporter('default'))
+    .pipe(babel({
+        //presets:['es2015']
+        compact: false,
+        presets: [["env",{
+            "targets": {
+              "browsers": ["last 4 versions"]
+            },
+            loose: true,
+            modules: false,
+        }, ], {  }]
+      }))
+    .pipe(concat('tabulator.es2015.js'))
+    .pipe(gulp.dest('dist/js'))
+    .pipe(rename({suffix: '.min'}))
+    .pipe(uglifyesm())
+    .pipe(insert.prepend(version))
+    .pipe(gulp.dest('dist/js'))
+    //.pipe(notify({ message: 'Scripts task complete' }));
+    .on('end', function(){ gutil.log('ESM Complete'); })
+    //.on("error", console.log)
+}
 
 
 //simplified core js
-gulp.task('core', function() {
+function core(){
     return gulp.src('src/js/core.js')
     .pipe(insert.prepend(version + "\n"))
     .pipe(include())
@@ -107,12 +133,10 @@ gulp.task('core', function() {
     .pipe(insert.prepend(version))
     .pipe(gulp.dest('dist/js'))
     .on('end', function(){ gutil.log('Core complete'); })
-    });
+}
 
 
-
-//make jquery wrapper
-gulp.task('modules', function(){
+function modules(){
 
     var path = __dirname + "/src/js/modules/";
 
@@ -142,13 +166,15 @@ gulp.task('modules', function(){
             .pipe(uglify())
             .pipe(insert.prepend(version))
             .pipe(gulp.dest('dist/js/modules/'))
+            .on('end', function(){gutil.log('module ' + file + ' complete')})
         }
         });
 
-    });
+    gutil.log("Modules complete");
+}
 
 //make jquery wrapper
-gulp.task('jquery', function(){
+function jquery(){
     return gulp.src('src/js/jquery_wrapper.js')
     .pipe(insert.prepend(version + "\n"))
     .pipe(include())
@@ -169,33 +195,49 @@ gulp.task('jquery', function(){
     .pipe(insert.prepend(version))
     .pipe(gulp.dest('dist/js'))
     .on('end', function(){ gutil.log('jQuery wrapper complete'); })
+}
 
-    });
+function scripts(){
+    return Promise.all([tabulator(), core(), esm(), modules(), jquery()]);
+}
 
+function devscripts(){
+    return Promise.all([tabulator()]);
+}
 
-gulp.task('scripts', function() {
-    gulp.start('tabulator');
-    gulp.start('core');
-    gulp.start('modules');
-    gulp.start('jquery');
-    });
-
-gulp.task('clean', function() {
+function clean(){
     return del(['dist/css', 'dist/js']);
-    });
+}
 
-
-gulp.task('default', ['clean'], function() {
-    gulp.start('styles', 'scripts');
-    });
-
-
-gulp.task('watch', function() {
-
+function watch(){
+    gulp.series(clean, gulp.series(styles, scripts));
     // Watch .scss files
-    gulp.watch('src/scss/**/*.scss', ['styles']);
+    gulp.watch('src/scss/**/*.scss', styles);
 
     // Watch .js files
-    gulp.watch('src/js/**/*.js', ['scripts']);
+    gulp.watch('src/js/**/*.js', scripts);
+}
 
-    });
+//a quick series of builds to test functionality while developing
+function dev(){
+    // May be not necessary to run a clean and build before the watch
+    gulp.series(clean, gulp.series(styles, devscripts));
+
+    // Watch .scss files
+    gulp.watch('src/scss/**/*.scss', styles);
+
+    // Watch .js files
+    gulp.watch('src/js/**/*.js', devscripts);
+}
+
+exports.tabulator = gulp.series(tabulator);
+exports.styles = gulp.series(styles);
+exports.esm = gulp.series(esm);
+exports.core = gulp.series(core);
+exports.modules = gulp.series(modules);
+exports.jquery = gulp.series(jquery);
+exports.scripts = gulp.series(scripts);
+exports.clean = gulp.series(clean);
+exports.default = gulp.series(clean, gulp.series(styles, scripts));
+exports.watch = gulp.series(watch);
+exports.dev = gulp.series(dev);

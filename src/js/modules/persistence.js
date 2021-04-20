@@ -54,10 +54,10 @@ Persistence.prototype.initialize = function(){
 		if(typeof this.table.options.persistenceWriterFunc === "function"){
 			this.writeFunc = this.table.options.persistenceWriterFunc;
 		}else{
-			if(this.readers[this.table.options.persistenceWriterFunc]){
-				this.writeFunc = this.readers[this.table.options.persistenceWriterFunc];
+			if(this.writers[this.table.options.persistenceWriterFunc]){
+				this.writeFunc = this.writers[this.table.options.persistenceWriterFunc];
 			}else{
-				console.warn("Persistence Write Error - invalid reader set", this.table.options.persistenceWriterFunc);
+				console.warn("Persistence Write Error - invalid writer set", this.table.options.persistenceWriterFunc);
 			}
 		}
 	}else{
@@ -109,6 +109,10 @@ Persistence.prototype.initialize = function(){
 				this.table.options.groupHeader = retreivedData.groupHeader;
 			}
 		}
+	}
+
+	if(this.config.columns){
+		this.table.options.columns = this.load("columns", this.table.options.columns);
 	}
 };
 
@@ -194,7 +198,7 @@ Persistence.prototype.mergeDefinition = function(oldCols, newCols){
 			}
 
 			keys.forEach((key)=>{
-				if(typeof column[key] !== "undefined"){
+				if(key !== "columns" && typeof column[key] !== "undefined"){
 					from[key] = column[key];
 				}
 			});
@@ -248,7 +252,6 @@ Persistence.prototype._findColumn = function(columns, subject){
 Persistence.prototype.save = function(type){
 	var data = {};
 
-
 	switch(type){
 		case "columns":
 		data = this.parseColumns(this.table.columnManager.getColumns())
@@ -288,6 +291,8 @@ Persistence.prototype.validateSorters = function(data){
 };
 
 Persistence.prototype.getGroupConfig = function(){
+	var data = {};
+
 	if(this.config.group){
 		if(this.config.group === true || this.config.group.groupBy){
 			data.groupBy = this.table.options.groupBy;
@@ -325,7 +330,8 @@ Persistence.prototype.getPageConfig = function(){
 //parse columns for data to store
 Persistence.prototype.parseColumns = function(columns){
 	var self = this,
-	definitions = [];
+	definitions = [],
+	excludedKeys = ["headerContextMenu", "headerMenu", "contextMenu", "clickMenu"];
 
 	columns.forEach(function(column){
 		var defStore = {},
@@ -356,7 +362,9 @@ Persistence.prototype.parseColumns = function(columns){
 					break;
 
 					default:
-					defStore[key] = colDef[key];
+					if(typeof colDef[key] !== "function" && excludedKeys.indexOf(key) === -1){
+						defStore[key] = colDef[key];
+					}
 				}
 
 			});

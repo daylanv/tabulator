@@ -12,6 +12,10 @@ CellComponent.prototype.getOldValue = function(){
 	return this._cell.getOldValue();
 };
 
+CellComponent.prototype.getInitialValue = function(){
+	return this._cell.initialValue;
+};
+
 CellComponent.prototype.getElement = function(){
 	return this._cell.getElement();
 };
@@ -44,12 +48,41 @@ CellComponent.prototype.restoreOldValue = function(){
 	this._cell.setValueActual(this._cell.getOldValue());
 };
 
+CellComponent.prototype.restoreInitialValue = function(){
+	this._cell.setValueActual(this._cell.initialValue);
+};
+
 CellComponent.prototype.edit = function(force){
 	return this._cell.edit(force);
 };
 
 CellComponent.prototype.cancelEdit = function(){
 	this._cell.cancelEdit();
+};
+
+CellComponent.prototype.isEdited = function(){
+	return !! this._cell.modules.edit && this._cell.modules.edit.edited;
+};
+
+CellComponent.prototype.clearEdited = function(){
+	if(self.table.modExists("edit", true)){
+		this._cell.table.modules.edit.clearEdited(this._cell);
+	}
+};
+
+
+CellComponent.prototype.isValid = function(){
+	return this._cell.modules.validate ? !this._cell.modules.validate.invalid : true;
+};
+
+CellComponent.prototype.validate = function(){
+	return this._cell.validate();
+};
+
+CellComponent.prototype.clearValidation = function(){
+	if(this._cell.table.modExists("validate", true)){
+		this._cell.table.modules.validate.clearValidation(this._cell);
+	}
 };
 
 
@@ -78,12 +111,17 @@ var Cell = function(column, row){
 	this.row = row;
 	this.element = null;
 	this.value = null;
+	this.initialValue;
 	this.oldValue = null;
 	this.modules = {};
 
 	this.height = null;
 	this.width = null;
 	this.minWidth = null;
+
+	this.component = null;
+
+	this.loaded = false; //track if the cell has been added to the DOM yet
 
 	this.build();
 };
@@ -99,6 +137,8 @@ Cell.prototype.build = function(){
 	this._configureCell();
 
 	this.setValueActual(this.column.getFieldValue(this.row.data));
+
+	this.initialValue = this.value;
 };
 
 Cell.prototype.generateElement = function(){
@@ -209,21 +249,29 @@ Cell.prototype._bindClickEvents = function(cellEvents){
 			}
 		});
 	}else{
-		// element.addEventListener("dblclick", function(e){
-			// e.preventDefault();
-			// try{
-			// 	if (document.selection) { // IE
-			// 		var range = document.body.createTextRange();
-			// 		range.moveToElementText(self.element);
-			// 		range.select();
-			// 	} else if (window.getSelection) {
-			// 		var range = document.createRange();
-			// 		range.selectNode(self.element);
-			// 		window.getSelection().removeAllRanges();
-			// 		window.getSelection().addRange(range);
-			// 	}
-			// }catch(e){}
-		// });
+		element.addEventListener("dblclick", function(e){
+
+			if(self.table.modExists("edit")){
+				if (self.table.modules.edit.currentCell === self){
+					return; //prevent instant selection of editor content
+				}
+			}
+
+			e.preventDefault();
+
+			try{
+				if (document.selection) { // IE
+					var range = document.body.createTextRange();
+					range.moveToElementText(self.element);
+					range.select();
+				} else if (window.getSelection) {
+					var range = document.createRange();
+					range.selectNode(self.element);
+					window.getSelection().removeAllRanges();
+					window.getSelection().addRange(range);
+				}
+			}catch(e){}
+		});
 	}
 
 	if (cellEvents.cellContext || this.table.options.cellContext){
@@ -477,7 +525,14 @@ Cell.prototype._generateTooltip = function(){
 
 
 //////////////////// Getters ////////////////////
-Cell.prototype.getElement = function(){
+Cell.prototype.getElement = function(containerOnly){
+	if(!this.loaded){
+		this.loaded = true;
+		if(!containerOnly){
+			this.layoutElement();
+		}
+	}
+
 	return this.element;
 };
 
@@ -507,11 +562,17 @@ Cell.prototype.setValue = function(value, mutate){
 			this.column.cellEvents.cellEdited.call(this.table, component);
 		}
 
+		if(this.table.options.groupUpdateOnCellEdit && this.table.options.groupBy && this.table.modExists("groupRows")) {
+			this.table.modules.groupRows.reassignRowToGroup(this.row);
+		}
+
 		this.cellRendered();
 
 		this.table.options.cellEdited.call(this.table, component);
 
-		this.table.options.dataEdited.call(this.table, this.table.rowManager.getData());
+		if(this.table.options.dataChanged){
+			this.table.options.dataChanged.call(this.table, this.table.rowManager.getData());
+		}
 	}
 
 };
@@ -568,16 +629,22 @@ Cell.prototype.setValueActual = function(value){
 		this.table.modules.reactiveData.unblock();
 	}
 
+	if(this.loaded){
+		this.layoutElement();
+	}
+};
+
+Cell.prototype.layoutElement = function(){
 	this._generateContents();
 	this._generateTooltip();
 
 	//set resizable handles
-	if(this.table.options.resizableColumns && this.table.modExists("resizeColumns")){
+	if(this.table.options.resizableColumns && this.table.modExists("resizeColumns") && this.row.type === "row"){
 		this.table.modules.resizeColumns.initializeColumn("cell", this.column, this.element);
 	}
 
-	//set column menu
-	if(this.column.definition.contextMenu && this.table.modExists("menu")){
+
+	if((this.column.definition.contextMenu || this.column.definition.clickMenu) && this.table.modExists("menu")){
 		this.table.modules.menu.initializeCell(this);
 	}
 
@@ -606,6 +673,11 @@ Cell.prototype.setMinWidth = function(){
 	this.element.style.minWidth = this.column.minWidthStyled;
 };
 
+Cell.prototype.setMaxWidth = function(){
+	this.maxWidth = this.column.maxWidth;
+	this.element.style.maxWidth = this.column.maxWidthStyled;
+};
+
 Cell.prototype.checkHeight = function(){
 	// var height = this.element.css("height");
 	this.row.reinitializeHeight();
@@ -627,7 +699,7 @@ Cell.prototype.getHeight = function(){
 };
 
 Cell.prototype.show = function(){
-	this.element.style.display = "";
+	this.element.style.display = this.column.vertAlign ? "inline-flex" : "";
 };
 
 Cell.prototype.hide = function(){
@@ -653,11 +725,33 @@ Cell.prototype.cancelEdit = function(){
 };
 
 
+Cell.prototype.validate = function(){
+	if(this.column.modules.validate && this.table.modExists("validate", true)){
+		var valid = this.table.modules.validate.validate(this.column.modules.validate, this, this.getValue());
+
+		return valid === true;
+	}else{
+		return true;
+	}
+};
 
 Cell.prototype.delete = function(){
-	if(!this.table.rowManager.redrawBlock){
+	if(!this.table.rowManager.redrawBlock && this.element.parentNode){
 		this.element.parentNode.removeChild(this.element);
 	}
+
+	if(this.modules.validate && this.modules.validate.invalid){
+		this.table.modules.validate.clearValidation(this);
+	}
+
+	if(this.modules.edit && this.modules.edit.edited){
+		this.table.modules.edit.clearEdited(this);
+	}
+
+	if(this.table.options.history){
+		this.table.modules.history.clearComponentHistory(this);
+	}
+
 	this.element = false;
 	this.column.deleteCell(this);
 	this.row.deleteCell(this);
@@ -762,5 +856,10 @@ Cell.prototype.getIndex = function(){
 
 //////////////// Object Generation /////////////////
 Cell.prototype.getComponent = function(){
-	return new CellComponent(this);
+
+	if(!this.component){
+		this.component = new CellComponent(this);
+	}
+
+	return this.component;
 };

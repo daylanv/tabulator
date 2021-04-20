@@ -88,7 +88,7 @@ Filter.prototype.initializeColumn = function(column, value){
 					}
 				}
 
-				self.headerFilters[field] = {value:value, func:filterFunc, type:type};
+				self.headerFilters[field] = {value:value, func:filterFunc, type:type, params:params || {}};
 
 			}else{
 				delete self.headerFilters[field];
@@ -134,7 +134,7 @@ Filter.prototype.generateHeaderFilterElement = function(column, initialValue, re
 
 		//set empty value function
 		column.modules.filter.emptyFunc = column.definition.headerFilterEmptyCheck || function(value){
-			return !value && value !== "0";
+			return !value && value !== "0" && value !== 0;
 		};
 
 		filterElement = document.createElement("div");
@@ -243,7 +243,7 @@ Filter.prototype.generateHeaderFilterElement = function(column, initialValue, re
 					this.table.rowManager.scrollHorizontal(left);
 					this.table.columnManager.scrollHorizontal(left);
 				}
-			})
+			});
 
 			//live update filters as user types
 			typingTimer = false;
@@ -380,13 +380,13 @@ Filter.prototype.hasChanged = function(){
 };
 
 //set standard filters
-Filter.prototype.setFilter = function(field, type, value){
+Filter.prototype.setFilter = function(field, type, value, params){
 	var self = this;
 
 	self.filterList = [];
 
 	if(!Array.isArray(field)){
-		field = [{field:field, type:type, value:value}];
+		field = [{field:field, type:type, value:value, params:params}];
 	}
 
 	self.addFilter(field);
@@ -394,11 +394,11 @@ Filter.prototype.setFilter = function(field, type, value){
 };
 
 //add filter to array
-Filter.prototype.addFilter = function(field, type, value){
+Filter.prototype.addFilter = function(field, type, value, params){
 	var self = this;
 
 	if(!Array.isArray(field)){
-		field = [{field:field, type:type, value:value}];
+		field = [{field:field, type:type, value:value, params:params}];
 	}
 
 	field.forEach(function(filter){
@@ -426,13 +426,12 @@ Filter.prototype.findFilter = function(filter){
 		return this.findSubFilters(filter);
 	}
 
-
 	var filterFunc = false;
 
 	if(typeof filter.field == "function"){
 		filterFunc = function(data){
 			return filter.field(data, filter.type || {})// pass params to custom filter function
-		}
+		};
 	}else{
 
 		if(self.filters[filter.type]){
@@ -441,12 +440,12 @@ Filter.prototype.findFilter = function(filter){
 
 			if(column){
 				filterFunc = function(data){
-					return self.filters[filter.type](filter.value, column.getFieldValue(data));
-				}
+					return self.filters[filter.type](filter.value, column.getFieldValue(data), data, filter.params || {});
+				};
 			}else{
 				filterFunc = function(data){
-					return self.filters[filter.type](filter.value, data[filter.field]);
-				}
+					return self.filters[filter.type](filter.value, data[filter.field], data, filter.params || {});
+				};
 			}
 
 
@@ -457,8 +456,6 @@ Filter.prototype.findFilter = function(filter){
 
 
 	filter.func = filterFunc;
-
-
 
 	return filter.func ? filter : false;
 };
@@ -476,7 +473,7 @@ Filter.prototype.findSubFilters = function(filters){
 	});
 
 	return output.length ? output : false;
-}
+};
 
 
 //get all filters
@@ -492,7 +489,7 @@ Filter.prototype.getFilters = function(all, ajax){
 			if(typeof item.type == "function"){
 				item.type = "function";
 			}
-		})
+		});
 	}
 
 	output = output.concat(this.filtersToArray(this.filterList, ajax));
@@ -523,7 +520,7 @@ Filter.prototype.filtersToArray = function(filterList, ajax){
 	});
 
 	return output;
-}
+};
 
 //get all filters
 Filter.prototype.getHeaderFilters = function(){
@@ -554,7 +551,7 @@ Filter.prototype.removeFilter = function(field, type, value){
 			});
 		}else{
 			index = self.filterList.findIndex(function(element){
-				return filter.field === element.field && filter.type === element.type  && filter.value === element.value
+				return filter.field === element.field && filter.type === element.type  && filter.value === element.value;
 			});
 		}
 
@@ -596,7 +593,9 @@ Filter.prototype.clearHeaderFilter = function(){
 	self.prevHeaderFilterChangeCheck = "{}";
 
 	this.headerFilterColumns.forEach(function(column){
-		column.modules.filter.value = null;
+		if(typeof column.modules.filter.value !== "undefined"){
+			delete column.modules.filter.value;
+		}
 		column.modules.filter.prevSuccess = undefined;
 		self.reloadHeaderFilter(column);
 	});
@@ -772,10 +771,53 @@ Filter.prototype.filters ={
 		}
 	},
 
+	//contains the keywords
+	"keywords":function(filterVal, rowVal, rowData, filterParams){
+		var keywords = filterVal.toLowerCase().split(typeof filterParams.separator === "undefined" ? " " : filterParams.separator),
+		value = String(rowVal === null || typeof rowVal === "undefined" ? "" : rowVal).toLowerCase(),
+		matches = [];
+
+		keywords.forEach((keyword) =>{
+			if(value.includes(keyword)){
+				matches.push(true);
+			}
+		});
+
+		return filterParams.matchAll ? matches.length === keywords.length : !!matches.length;
+	},
+
+	//starts with the string
+	"starts":function(filterVal, rowVal, rowData, filterParams){
+		if(filterVal === null || typeof filterVal === "undefined"){
+			return rowVal === filterVal ? true : false;
+		}else{
+			if(typeof rowVal !== 'undefined' && rowVal !== null){
+				return String(rowVal).toLowerCase().startsWith(filterVal.toLowerCase());
+			}
+			else{
+				return false;
+			}
+		}
+	},
+
+	//ends with the string
+	"ends":function(filterVal, rowVal, rowData, filterParams){
+		if(filterVal === null || typeof filterVal === "undefined"){
+			return rowVal === filterVal ? true : false;
+		}else{
+			if(typeof rowVal !== 'undefined' && rowVal !== null){
+				return String(rowVal).toLowerCase().endsWith(filterVal.toLowerCase());
+			}
+			else{
+				return false;
+			}
+		}
+	},
+
 	//in array
 	"in":function(filterVal, rowVal, rowData, filterParams){
 		if(Array.isArray(filterVal)){
-			return filterVal.indexOf(rowVal) > -1;
+			return filterVal.length ? filterVal.indexOf(rowVal) > -1 : true;
 		}else{
 			console.warn("Filter Error - filter value is not an array:", filterVal);
 			return false;

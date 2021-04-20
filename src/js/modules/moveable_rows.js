@@ -19,6 +19,9 @@ var MoveRows = function(table){
 	this.touchMove = false;
 
 	this.connection = false;
+	this.connectionSelectorsTables = false;
+	this.connectionSelectorsElements = false;
+	this.connectionElements = [];
 	this.connections = [];
 
 	this.connectedTable = false;
@@ -36,7 +39,10 @@ MoveRows.prototype.createPlaceholderElement = function(){
 
 
 MoveRows.prototype.initialize = function(handle){
-	this.connection = this.table.options.movableRowsConnectedTables;
+	this.connectionSelectorsTables = this.table.options.movableRowsConnectedTables;
+	this.connectionSelectorsElements = this.table.options.movableRowsConnectedElements;
+
+	this.connection = this.connectionSelectorsTables || this.connectionSelectorsElements;
 };
 
 MoveRows.prototype.setHandle = function(handle){
@@ -87,15 +93,15 @@ MoveRows.prototype.initializeRow = function(row){
 
 	//same table drag drop
 	config.mousemove = function(e){
-		if(((e.pageY - Tabulator.prototype.helpers.elOffset(row.element).top) + self.table.rowManager.element.scrollTop) > (row.getHeight() / 2)){
+		var rowEl = row.getElement();
+
+		if(((e.pageY - Tabulator.prototype.helpers.elOffset(rowEl).top) + self.table.rowManager.element.scrollTop) > (row.getHeight() / 2)){
 			if(self.toRow !== row || !self.toRowAfter){
-				var rowEl = row.getElement();
 				rowEl.parentNode.insertBefore(self.placeholderElement, rowEl.nextSibling);
 				self.moveRow(row, true);
 			}
 		}else{
 			if(self.toRow !== row || self.toRowAfter){
-				var rowEl = row.getElement();
 				rowEl.parentNode.insertBefore(self.placeholderElement, rowEl);
 				self.moveRow(row, false);
 			}
@@ -131,7 +137,7 @@ MoveRows.prototype.initializeRow = function(row){
 
 MoveRows.prototype.initializeCell = function(cell){
 	var self = this,
-	cellEl = cell.getElement();
+	cellEl = cell.getElement(true);
 
 	cellEl.addEventListener("mousedown", function(e){
 		if(e.which === 1){
@@ -149,7 +155,7 @@ MoveRows.prototype.initializeCell = function(cell){
 		}
 	});
 
-	this.bindTouchEvents(cell.row, cell.getElement());
+	this.bindTouchEvents(cell.row, cellEl);
 };
 
 MoveRows.prototype.bindTouchEvents = function(row, element){
@@ -379,27 +385,73 @@ MoveRows.prototype.moveHoverConnections = function(e){
 };
 
 
+MoveRows.prototype.elementRowDrop = function(e, element, row){
+	if(this.table.options.movableRowsElementDrop){
+		this.table.options.movableRowsElementDrop(e, element, row ? row.getComponent() : false);
+	}
+};
+
 //establish connection with other tables
 MoveRows.prototype.connectToTables = function(row){
-	var self = this,
-	connections = this.table.modules.comms.getConnections(this.connection);
+	var connectionTables;
 
-	this.table.options.movableRowsSendingStart.call(this.table, connections);
+	if(this.connectionSelectorsTables){
+		connectionTables = this.table.modules.comms.getConnections(this.connectionSelectorsTables);
 
-	this.table.modules.comms.send(this.connection, "moveRow", "connect", {
-		row:row,
-	});
+		this.table.options.movableRowsSendingStart.call(this.table, connectionTables);
+
+		this.table.modules.comms.send(this.connectionSelectorsTables, "moveRow", "connect", {
+			row:row,
+		});
+	}
+
+	if(this.connectionSelectorsElements){
+
+		this.connectionElements = [];
+
+		if(!Array.isArray(this.connectionSelectorsElements)){
+			this.connectionSelectorsElements = [this.connectionSelectorsElements];
+		}
+
+		this.connectionSelectorsElements.forEach((query) => {
+			if(typeof query === "string"){
+				this.connectionElements = this.connectionElements.concat(Array.prototype.slice.call(document.querySelectorAll(query)));
+			}else{
+				this.connectionElements.push(query);
+			}
+		});
+
+		this.connectionElements.forEach((element) => {
+			var dropEvent = (e) => {
+				this.elementRowDrop(e, element, this.moving);
+			};
+
+			element.addEventListener("mouseup", dropEvent);
+			element.tabulatorElementDropEvent = dropEvent;
+
+			element.classList.add("tabulator-movingrow-receiving");
+		});
+	}
 };
 
 
 //disconnect from other tables
 MoveRows.prototype.disconnectFromTables = function(){
-	var self = this,
-	connections = this.table.modules.comms.getConnections(this.connection);
+	var connectionTables;
 
-	this.table.options.movableRowsSendingStop.call(this.table, connections);
+	if(this.connectionSelectorsTables){
+		connectionTables = this.table.modules.comms.getConnections(this.connectionSelectorsTables);
 
-	this.table.modules.comms.send(this.connection, "moveRow", "disconnect");
+		this.table.options.movableRowsSendingStop.call(this.table, connectionTables);
+
+		this.table.modules.comms.send(this.connectionSelectorsTables, "moveRow", "disconnect");
+	}
+
+	this.connectionElements.forEach((element) => {
+		element.classList.remove("tabulator-movingrow-receiving");
+		element.removeEventListener("mouseup", element.tabulatorElementDropEvent);
+		delete element.tabulatorElementDropEvent;
+	});
 };
 
 

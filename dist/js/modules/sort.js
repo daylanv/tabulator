@@ -1,6 +1,6 @@
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-/* Tabulator v4.6.2 (c) Oliver Folkerd */
+/* Tabulator v4.9.3 (c) Oliver Folkerd */
 
 var Sort = function Sort(table) {
 	this.table = table; //hold Tabulator object
@@ -43,9 +43,18 @@ Sort.prototype.initializeColumn = function (column, content) {
 		colEl.classList.add("tabulator-sortable");
 
 		arrowEl = document.createElement("div");
-		arrowEl.classList.add("tabulator-arrow");
+		arrowEl.classList.add("tabulator-col-sorter");
+
+		if (_typeof(this.table.options.headerSortElement) == "object") {
+			arrowEl.appendChild(this.table.options.headerSortElement);
+		} else {
+			arrowEl.innerHTML = this.table.options.headerSortElement;
+		}
+
 		//create sorter arrow
 		content.appendChild(arrowEl);
+
+		column.modules.sort.element = arrowEl;
 
 		//sort on click
 		colEl.addEventListener("click", function (e) {
@@ -219,6 +228,7 @@ Sort.prototype.sort = function (data) {
 	var self = this,
 	    sortList = this.table.options.sortOrderReverse ? self.sortList.slice().reverse() : self.sortList,
 	    sortListActual = [],
+	    rowComponents = [],
 	    lastSort;
 
 	if (self.table.options.dataSorting) {
@@ -259,7 +269,11 @@ Sort.prototype.sort = function (data) {
 	}
 
 	if (self.table.options.dataSorted) {
-		self.table.options.dataSorted.call(self.table, self.getSort(), self.table.rowManager.getComponents("active"));
+		data.forEach(function (row) {
+			rowComponents.push(row.getComponent());
+		});
+
+		self.table.options.dataSorted.call(self.table, self.getSort(), rowComponents);
 	}
 };
 
@@ -328,12 +342,25 @@ Sort.prototype.sorters = {
 	//sort numbers
 	number: function number(a, b, aRow, bRow, column, dir, params) {
 		var alignEmptyValues = params.alignEmptyValues;
-		var decimal = params.decimalSeparator || ".";
-		var thousand = params.thousandSeparator || ",";
+		var decimal = params.decimalSeparator;
+		var thousand = params.thousandSeparator;
 		var emptyAlign = 0;
 
-		a = parseFloat(String(a).split(thousand).join("").split(decimal).join("."));
-		b = parseFloat(String(b).split(thousand).join("").split(decimal).join("."));
+		a = String(a);
+		b = String(b);
+
+		if (thousand) {
+			a = a.split(thousand).join("");
+			b = b.split(thousand).join("");
+		}
+
+		if (decimal) {
+			a = a.split(decimal).join(".");
+			b = b.split(decimal).join(".");
+		}
+
+		a = parseFloat(a);
+		b = parseFloat(b);
 
 		//handle non numeric values
 		if (isNaN(a)) {
@@ -397,10 +424,10 @@ Sort.prototype.sorters = {
 		return this.sorters.datetime.call(this, a, b, aRow, bRow, column, dir, params);
 	},
 
-	//sort hh:mm formatted times
+	//sort HH:mm formatted times
 	time: function time(a, b, aRow, bRow, column, dir, params) {
 		if (!params.format) {
-			params.format = "hh:mm";
+			params.format = "HH:mm";
 		}
 
 		return this.sorters.datetime.call(this, a, b, aRow, bRow, column, dir, params);
@@ -408,7 +435,7 @@ Sort.prototype.sorters = {
 
 	//sort datetime
 	datetime: function datetime(a, b, aRow, bRow, column, dir, params) {
-		var format = params.format || "DD/MM/YYYY hh:mm:ss",
+		var format = params.format || "DD/MM/YYYY HH:mm:ss",
 		    alignEmptyValues = params.alignEmptyValues,
 		    emptyAlign = 0;
 
