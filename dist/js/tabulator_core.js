@@ -4743,6 +4743,11 @@ VDomHoz.prototype.reinitialize = function (update, blockRedraw) {
 
 			config.leftPos = colPos;
 			config.rightPos = colPos + width;
+			config.width = width;
+
+			if (_this18.table.options.layout === "fitData") {
+				config.fitDataCheck = true;
+			}
 
 			if (colPos + width > _this18.vDomScrollPosLeft && colPos < _this18.vDomScrollPosRight) {
 				//column is visible
@@ -4832,15 +4837,15 @@ VDomHoz.prototype.colPositionAdjust = function (start, end, diff) {
 	for (var i = start; i < end; i++) {
 		var column = this.columns[i];
 
-		column.modules.vdomHoz.leftPos -= diff;
-		column.modules.vdomHoz.rightPos -= diff;
+		column.modules.vdomHoz.leftPos += diff;
+		column.modules.vdomHoz.rightPos += diff;
 	}
 };
 
 VDomHoz.prototype.addColRight = function () {
 	var column = this.columns[this.rightCol + 1],
 	    rows,
-	    oldWidth,
+	    newWidth,
 	    widthDiff;
 
 	if (column && column.modules.vdomHoz.leftPos <= this.vDomScrollPosRight) {
@@ -4855,21 +4860,7 @@ VDomHoz.prototype.addColRight = function () {
 			}
 		});
 
-		if (this.fitDataColAvg) {
-
-			oldWidth = column.getWidth();
-
-			if (oldWidth === this.fitDataColAvg) {
-				column.reinitializeWidth();
-
-				widthDiff = oldWidth - column.getWidth();
-
-				if (widthDiff) {
-					column.modules.vdomHoz.rightPos -= widthDiff;
-					this.colPositionAdjust(this.rightCol + 1, this.columns.length, widthDiff);
-				}
-			}
-		}
+		this.fitDataColActualWidthCheck(column);
 
 		this.rightCol++;
 
@@ -4899,6 +4890,8 @@ VDomHoz.prototype.addColLeft = function () {
 				cell.cellRendered();
 			}
 		});
+
+		this.fitDataColActualWidthCheck(column);
 
 		if (!this.leftCol) {
 			this.vDomPadLeft = 0;
@@ -4960,6 +4953,25 @@ VDomHoz.prototype.removeColLeft = function () {
 		this.leftCol++;
 
 		this.removeColLeft();
+	}
+};
+
+VDomHoz.prototype.fitDataColActualWidthCheck = function (column) {
+	var newWidth, widthDiff;
+
+	if (column.modules.vdomHoz.fitDataCheck) {
+		column.reinitializeWidth();
+
+		newWidth = column.getWidth();
+		widthDiff = newWidth - column.modules.vdomHoz.width;
+
+		if (widthDiff) {
+			column.modules.vdomHoz.rightPos += widthDiff;
+			column.modules.vdomHoz.width = newWidth;
+			this.colPositionAdjust(this.rightCol + 2, this.columns.length, widthDiff);
+		}
+
+		column.modules.vdomHoz.fitDataCheck = false;
 	}
 };
 
